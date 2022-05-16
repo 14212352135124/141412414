@@ -1,0 +1,266 @@
+local Context = game:GetService("ScriptContext")
+for _, Connection in next, getconnections(Context.Error) do
+    Connection:Disable()
+end
+
+local Config = {
+    WindowName = "ELITE CW",
+	Color = Color3.fromRGB(255,128,64),
+	Keybind = Enum.KeyCode.RightBracket
+}
+
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/AlexR32/Roblox/main/BracketV3.lua"))()
+local Window = Library:CreateWindow(Config, game:GetService("CoreGui"))
+
+local Tab1 = Window:CreateTab("Main")
+local Tab2 = Window:CreateTab("UI Settings")
+
+local Section1 = Tab1:CreateSection("Local Player")
+local Section2 = Tab1:CreateSection("Combat")
+local Section3 = Tab2:CreateSection("Menu")
+local Section4 = Tab2:CreateSection("Background")
+local Section5 = Tab1:CreateSection("Misc")
+local Section6 = Tab1:CreateSection("Anti")
+
+for i,v in pairs(getgc(true)) do
+    if type(v) == "table" and rawget(v,"Remote") then
+        v.Remote.Name = v.Name
+    end
+end
+
+local mt = getrawmetatable(game)
+setreadonly(mt,false)
+local old = mt.__index
+mt.__index = newcclosure(function(self,a)
+    if a == "WalkSpeed" then 
+        return 16
+    end
+    if a == "JumpPower" then 
+        return 50
+    end
+    if a == "HipHeight" then 
+        return 2
+    end
+    return old(self,a)
+end)
+
+local Toggle5 = Section2:CreateToggle("Auto Parry", nil, function(State)
+_G.AutoParry = State
+
+if _G.AutoParry == true then
+local lp = game.Players.LocalPlayer
+
+local animationInfo = {}
+
+function getInfo(id)
+  local success, info = pcall(function()
+      return game:GetService("MarketplaceService"):GetProductInfo(id)
+  end)
+  if success then
+      return info
+  end
+  return {Name=''}
+end
+function block(player)
+  keypress(0x46)
+  wait()
+  keyrelease(0x46)
+end
+
+local AnimNames = {
+  'Slash',
+  'Swing',
+  'Sword'
+}
+
+function playerAdded(v)
+    local function charadded(char)
+      local humanoid = char:WaitForChild("Humanoid", 5)
+      if humanoid then
+          humanoid.AnimationPlayed:Connect(function(track)
+              local info = animationInfo[track.Animation.AnimationId]
+              if not info then
+                  info = getInfo(tonumber(track.Animation.AnimationId:match("%d+")))
+                  animationInfo[track.Animation.AnimationId] = info
+              end
+             
+              if (lp.Character and lp.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Head")) then
+                  local mag = (v.Character.Head.Position - lp.Character.Head.Position).Magnitude
+                  if mag < 10 then
+                     
+                      for _, animName in pairs(AnimNames) do
+                          if info.Name:match(animName) then
+                              pcall(block, v)
+                          end
+                      end
+                     
+                  end
+              end
+          end)
+      end
+  end
+ 
+  if v.Character then
+      charadded(v.Character)
+  end
+  v.CharacterAdded:Connect(charadded)
+end
+
+for i,v in pairs(game.Players:GetPlayers()) do                 -- 
+   if v ~= lp then
+       playerAdded(v)
+   end
+end
+
+game.Players.PlayerAdded:Connect(playerAdded)
+end
+end)
+
+Toggle5:AddToolTip("Auto Block")
+Toggle5:CreateKeybind("Y", function(Key)
+    print(Key)
+end)
+
+-------------
+local Slider1 = Section1:CreateSlider("WalkSpeed", 0,37,16,true, function(v)
+	game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v
+end)
+
+-------------
+local Slider1 = Section1:CreateSlider("JumpPower", 0,75,50,true, function(v)
+	game.Players.LocalPlayer.Character.Humanoid.JumpPower = v
+end)
+
+local Toggle3 = Section1:CreateToggle("Inf Stamina", nil, function(State)
+for i,v in pairs(getgc(true)) do
+    if typeof(v) == 'table' and rawget(v, '_setStamina') then
+     v._setStamina = function(a, b)
+         a._stamina = math.huge
+         a._staminaChangedSignal:Fire(149)
+       end
+     end
+   end
+end)
+
+local Toggle3 = Section1:CreateToggle("No Bear Trap Damage", nil, function(State)
+getgenv().NoBearTrapDamage = State
+game:GetService('RunService').Heartbeat:Connect(function()
+    if getgenv().NoBearTrapDamage == true then
+        for _,v in pairs(game.Workspace.EffectsJunk:GetDescendants()) do 
+            if v.Name == "GotHitRE" and v:IsA("RemoteEvent") and v.Parent.Name == "OpenBearTrap" then 
+                v:Destroy()
+            end
+        end
+    end
+end)
+end)
+
+local Toggle3 = Section1:CreateToggle("No Fire Damage", nil, function(State)
+getgenv().NoFireDamage = State
+game:GetService('RunService').Heartbeat:Connect(function()
+    if getgenv().NoFireDamage == true then
+        for _,v in pairs(game.Workspace.EffectsJunk:GetDescendants()) do 
+            if v:IsA("Part") and v.Name == "" then 
+                for i,x in pairs(v:GetChildren()) do
+                    if x:IsA("RemoteEvent") and x.Name == "GotHitRE" then
+                        x:Destroy()
+                    end
+                end
+            end
+        end
+    end
+end)
+end)
+
+local Toggle4 = Section6:CreateToggle("Anti Ragdoll", nil, function(State)
+_G.NoRagdoll = State
+local OldNameCall = nil
+OldNameCall = hookmetamethod(game, "__namecall", function(Self, ...)
+    if not checkcaller() and getnamecallmethod() == "FireServer" and Self.Name == "RagdollRemoteEvent" and _G.NoRagdoll then
+        return
+    end
+    return OldNameCall(Self, ...)
+end)
+end)
+
+local Toggle5 = Section6:CreateToggle("Anti Fall Damage", nil, function(State)
+_G.NoFall = State
+local OldNameCall = nil
+OldNameCall = hookmetamethod(game, "__namecall", function(Self, ...)
+    if not checkcaller() and getnamecallmethod() == "FireServer" and Self.Name == "TakeFallDamage" and _G.NoFall then
+        return
+    end
+    return OldNameCall(Self, ...)
+end)
+end)
+
+local Toggle5 = Section6:CreateToggle("Anti Stun", nil, function(State)
+    if State == true then
+        local plr = game:GetService("Players").LocalPlayer
+        local data = plr.characterData
+        data.IsStunned:GetPropertyChangedSignal("Value"):Connect(function()
+        data.IsStunned = false
+    end)
+end 
+if State == false then
+        local plr = game:GetService("Players").LocalPlayer
+        local data = plr.characterData
+        data.IsStunned:GetPropertyChangedSignal("Value"):Connect(function()
+        data.IsStunned = true
+    end)
+end
+end)
+
+local Toggle6 = Section5:CreateToggle("Hide Name", nil, function(State)
+    local plr = game:GetService("Players").LocalPlayer
+    plr.Character.Head.face:Destroy()
+end)
+
+--------------
+local Toggle3 = Section3:CreateToggle("UI Toggle", nil, function(State)
+	Window:Toggle(State)
+end)
+Toggle3:CreateKeybind(tostring(Config.Keybind):gsub("Enum.KeyCode.", ""), function(Key)
+	Config.Keybind = Enum.KeyCode[Key]
+end)
+Toggle3:SetState(true)
+
+local Colorpicker3 = Section3:CreateColorpicker("UI Color", function(Color)
+	Window:ChangeColor(Color)
+end)
+Colorpicker3:UpdateColor(Config.Color)
+
+-- credits to jan for patterns
+local Dropdown3 = Section4:CreateDropdown("Image", {"Default","Hearts","Abstract","Hexagon","Circles","Lace With Flowers","Floral"}, function(Name)
+	if Name == "Default" then
+		Window:SetBackground("2151741365")
+	elseif Name == "Hearts" then
+		Window:SetBackground("6073763717")
+	elseif Name == "Abstract" then
+		Window:SetBackground("6073743871")
+	elseif Name == "Hexagon" then
+		Window:SetBackground("6073628839")
+	elseif Name == "Circles" then
+		Window:SetBackground("6071579801")
+	elseif Name == "Lace With Flowers" then
+		Window:SetBackground("6071575925")
+	elseif Name == "Floral" then
+		Window:SetBackground("5553946656")
+	end
+end)
+Dropdown3:SetOption("Default")
+
+local Colorpicker4 = Section4:CreateColorpicker("Color", function(Color)
+	Window:SetBackgroundColor(Color)
+end)
+Colorpicker4:UpdateColor(Color3.new(1,1,1))
+
+local Slider3 = Section4:CreateSlider("Transparency",0,1,nil,false, function(Value)
+	Window:SetBackgroundTransparency(Value)
+end)
+Slider3:SetValue(0)
+
+local Slider4 = Section4:CreateSlider("Tile Scale",0,1,nil,false, function(Value)
+	Window:SetTileScale(Value)
+end)
+Slider4:SetValue(0.5)
